@@ -1,0 +1,8 @@
+# Ignore node_modules and build output
+node_modules/
+build/
+dist/
+.env
+.DS_Store
+*.log
+backend_old/
