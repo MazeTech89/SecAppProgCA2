@@ -11,8 +11,7 @@ function LoginUser() {
 
   const handleSubmit = e => {
     e.preventDefault();
-    // This endpoint should be implemented in the backend for real authentication
-    axios.post('/api/users/login', form)
+    axios.post('http://localhost:4000/login', form)
       .then(res => setMessage('Login successful!'))
       .catch(() => setMessage('Login failed.'));
   };

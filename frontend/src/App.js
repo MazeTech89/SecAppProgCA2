@@ -3,6 +3,7 @@ import React from 'react';
 import UserList from './UserList';
 import RegisterUser from './RegisterUser';
 import LoginUser from './LoginUser';
+import BlogPosts from './BlogPosts';
 
 // Main App component for the frontend
 function App() {
@@ -15,6 +16,8 @@ function App() {
       <LoginUser />
       {/* Renders UserList component which fetches backend user data */}
       <UserList />
+      {/* Insecure Blog Posts CRUD Demo */}
+      <BlogPosts />
     </div>
   );
 }

@@ -9,9 +9,9 @@ function UserList() {
 
   // Fetch users from backend when component mounts
   useEffect(() => {
-    axios.get('/api/users')
-      .then(res => setUsers(res.data))
-      .catch(() => setError('Error connecting to backend'));
+    // This endpoint does not exist in the backend, so just show a placeholder or remove this feature
+    setUsers([]);
+    setError('User list not implemented in backend');
   }, []);
 
   // Display the user list or error
@@ -22,9 +22,7 @@ function UserList() {
         <div>{error}</div>
       ) : (
         <ul>
-          {users.map(user => (
-            <li key={user.id}>{user.username} ({user.email})</li>
-          ))}
+          {/* No user list available */}
         </ul>
       )}
     </div>

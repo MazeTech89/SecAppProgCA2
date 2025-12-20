@@ -11,7 +11,11 @@ function RegisterUser() {
 
   const handleSubmit = e => {
     e.preventDefault();
-    axios.post('/api/users/register', form)
+    // Only username and password are used in backend
+    axios.post('http://localhost:4000/register', {
+      username: form.username,
+      password: form.password
+    })
       .then(res => setMessage('Registration successful!'))
       .catch(() => setMessage('Registration failed.'));
   };
@@ -21,7 +25,6 @@ function RegisterUser() {
       <h2>Register User</h2>
       <form onSubmit={handleSubmit}>
         <input name="username" placeholder="Username" value={form.username} onChange={handleChange} required />
-        <input name="email" placeholder="Email" value={form.email} onChange={handleChange} required />
         <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} required />
         <button type="submit">Register</button>
       </form>
