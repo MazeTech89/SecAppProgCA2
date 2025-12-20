@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
 
 function LoginUser() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -12,7 +15,15 @@ function LoginUser() {
   const handleSubmit = e => {
     e.preventDefault();
     axios.post('http://localhost:4000/login', form)
-      .then(res => setMessage('Login successful!'))
+      .then(res => {
+        if (res.data.token) {
+          localStorage.setItem('token', res.data.token);
+          setMessage('Login successful!');
+          setTimeout(() => navigate('/posts'), 500); // Redirect after short delay
+        } else {
+          setMessage('Login failed: No token received.');
+        }
+      })
       .catch(() => setMessage('Login failed.'));
   };
 
