@@ -1,3 +1,0 @@
-name: upgrade-to-java-21
-recipeList:
-  - org.openrewrite.java.migrate.UpgradeToJava21
