@@ -1,14 +1,34 @@
-# Frontend
+# Secure/Insecure Blog Platform Frontend
 
-This folder will contain the React JavaScript app for the secure web application project.
+This is the React frontend for the secure/insecure blog platform demo. It works with the backend to demonstrate both insecure and secure coding practices.
 
-## Setup Instructions
+## Prerequisites
+- Node.js (v14 or higher recommended)
+- npm (Node package manager)
 
-1. Initialize a React project (using Create React App or Vite).
-2. Connect to the backend API endpoints.
-3. Implement UI for authentication and comments.
-4. Add error boundaries and basic monitoring.
+## Setup
+1. Open a terminal in the `frontend` directory.
+2. Install dependencies:
+	```sh
+	npm install
+	```
+3. Start the frontend app:
+	```sh
+	npm start
+	```
+	The app runs on port 3000 by default.
 
----
+## Switching Between Insecure and Secure Modes
+- The frontend is designed to work with either the insecure or secure backend.
+- To test insecure features (no auth, XSS, etc.), ensure the insecure backend endpoints are active.
+- To test secure features (JWT, input validation, etc.), ensure the secure backend endpoints are active.
+- See comments in the backend and frontend code for switching logic if needed.
 
-Refer to the main project README for full instructions.
+## Features
+- Register and login forms
+- Create, view, edit, and delete blog posts
+- Demonstrates insecure (no auth, XSS, SQLi) and secure (JWT, parameterized queries, XSS protection) flows
+
+## Notes
+- For demonstration only. Do **not** use insecure code in production.
+- See project documentation for details on vulnerabilities and mitigations.

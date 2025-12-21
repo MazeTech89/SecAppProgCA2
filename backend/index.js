@@ -40,6 +40,75 @@ db.serialize(() => {
 });
 
 
+
+// ================= INSECURE ENDPOINTS (ACTIVE) =================
+// Only one version (insecure or secure) should be active at a time.
+// To switch to secure endpoints, comment out this block and uncomment the secure block below.
+
+// Insecure: Register endpoint (password stored in plaintext, no validation)
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
+  db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, password], function(err) {
+    if (err) return res.status(400).json({ error: 'User already exists' });
+    res.json({ id: this.lastID, username });
+  });
+});
+
+// Insecure: Login endpoint (no password hashing, no JWT)
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
+    if (err || !user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (password !== user.password) return res.status(401).json({ error: 'Invalid credentials' });
+    res.json({ message: 'Login successful', id: user.id, username: user.username });
+  });
+});
+
+// Insecure: Create post (vulnerable to SQL Injection, no auth)
+app.post('/posts', (req, res) => {
+  const { title, content } = req.body;
+  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+  const sql = `INSERT INTO posts (title, content) VALUES ('${title}', '${content}')`;
+  db.run(sql, function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    res.json({ id: this.lastID, title, content });
+  });
+});
+
+// Insecure: Get all posts (no output encoding, XSS possible, no auth)
+app.get('/posts', (req, res) => {
+  db.all('SELECT * FROM posts', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Insecure: Edit post (vulnerable to SQL Injection, no auth)
+app.put('/posts/:id', (req, res) => {
+  const { title, content } = req.body;
+  const { id } = req.params;
+  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+  const sql = `UPDATE posts SET title = '${title}', content = '${content}' WHERE id = ${id}`;
+  db.run(sql, function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    res.json({ id, title, content });
+  });
+});
+
+// Insecure: Delete post (vulnerable to SQL Injection)
+app.delete('/posts/:id', (req, res) => {
+  const { id } = req.params;
+  const sql = `DELETE FROM posts WHERE id = ${id}`;
+  db.run(sql, function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    res.json({ message: 'Post deleted', id });
+  });
+});
+
+// ================= SECURE ENDPOINTS (INACTIVE) =================
+// To activate secure endpoints, comment out the insecure block above and uncomment this block.
+/*
 // Register endpoint (secure version)
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
@@ -62,38 +131,38 @@ app.post('/login', (req, res) => {
   });
 });
 
+// Secure: Create post (parameterized, requires auth)
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
 
-
-// Secure: Create post (uses parameterized queries)
 app.post('/posts', authenticateToken, (req, res) => {
   const { title, content } = req.body;
-  const user_id = req.user.id;
+  const userId = req.user.id;
   if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
-  db.run('INSERT INTO posts (user_id, title, content) VALUES (?, ?, ?)', [user_id, title, content], function(err) {
+  db.run('INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)', [title, content, userId], function(err) {
     if (err) return res.status(400).json({ error: err.message });
-    res.json({ id: this.lastID, user_id, title, content });
+    res.json({ id: this.lastID, title, content });
   });
 });
 
-
-
-// Secure: Get all posts (output encoding for XSS prevention)
+// Secure: Get all posts (output encoding, requires auth)
 app.get('/posts', authenticateToken, (req, res) => {
   db.all('SELECT * FROM posts', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
-    // Simple output encoding for demonstration
-    const encode = (str) => String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const safeRows = rows.map(row => ({
-      ...row,
-      title: encode(row.title),
-      content: encode(row.content)
-    }));
-    res.json(safeRows);
+    // Output encoding should be handled on frontend (e.g., DOMPurify)
+    res.json(rows);
   });
 });
 
-
-// Secure: Edit post (uses parameterized queries)
+// Secure: Edit post (parameterized, requires auth)
 app.put('/posts/:id', authenticateToken, (req, res) => {
   const { title, content } = req.body;
   const { id } = req.params;
@@ -104,17 +173,19 @@ app.put('/posts/:id', authenticateToken, (req, res) => {
   });
 });
 
-
-// Insecure: Delete post (vulnerable to SQL Injection)
-app.delete('/posts/:id', (req, res) => {
+// Secure: Delete post (parameterized, requires auth)
+app.delete('/posts/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
-  // Vulnerable: direct string interpolation
-  const sql = `DELETE FROM posts WHERE id = ${id}`;
-  db.run(sql, function(err) {
+  db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, req.user.id], function(err) {
     if (err) return res.status(400).json({ error: err.message });
     res.json({ message: 'Post deleted', id });
   });
 });
+*/
+
+
+
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

@@ -11,14 +11,10 @@ function BlogPosts() {
   const [editId, setEditId] = useState(null);
 
 
-  // Get JWT token from localStorage
-  const getToken = () => localStorage.getItem('token');
 
-  // Fetch posts (secure)
+  // Fetch posts (insecure)
   const fetchPosts = () => {
-    axios.get('http://localhost:4000/posts', {
-      headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    axios.get('http://localhost:4000/posts')
       .then(res => setPosts(res.data))
       .catch(() => setMessage('Error fetching posts'));
   };
@@ -37,16 +33,15 @@ function BlogPosts() {
   };
 
 
-  // Create or update post (secure)
+  // Create or update post (insecure)
   const handleSubmit = e => {
     e.preventDefault();
-    const config = { headers: { Authorization: `Bearer ${getToken()}` } };
     if (editId) {
-      axios.put(`http://localhost:4000/posts/${editId}`, form, config)
+      axios.put(`http://localhost:4000/posts/${editId}`, form)
         .then(() => { setMessage('Post updated!'); setEditId(null); fetchPosts(); })
         .catch(() => setMessage('Error updating post'));
     } else {
-      axios.post('http://localhost:4000/posts', form, config)
+      axios.post('http://localhost:4000/posts', form)
         .then(() => { setMessage('Post created!'); fetchPosts(); })
         .catch(() => setMessage('Error creating post'));
     }
@@ -60,11 +55,9 @@ function BlogPosts() {
   };
 
 
-  // Delete post (secure)
+  // Delete post (insecure)
   const handleDelete = id => {
-    axios.delete(`http://localhost:4000/posts/${id}`, {
-      headers: { Authorization: `Bearer ${getToken()}` }
-    })
+    axios.delete(`http://localhost:4000/posts/${id}`)
       .then(() => { setMessage('Post deleted!'); fetchPosts(); })
       .catch(() => setMessage('Error deleting post'));
   };
@@ -81,7 +74,7 @@ function BlogPosts() {
       <ul>
         {posts.map(post => (
           <li key={post.id}>
-            <b>{post.title}</b>: <span>{post.content}</span>
+            <b>{post.title}</b>: <span dangerouslySetInnerHTML={{ __html: post.content }} />
             <button onClick={() => handleEdit(post)}>Edit</button>
             <button onClick={() => handleDelete(post.id)}>Delete</button>
           </li>

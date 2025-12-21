@@ -112,14 +112,94 @@ Sensitive data (e.g., passwords) is never stored in plaintext. The application i
 ## 10. Testing Plan
 *Describe the testing plan, tools used (Selenium, ZAP), and results.*
 
-## 11. Discussion on the Insecure Code
-- Explain and illustrate SQL Injection, XSS, and Sensitive Data Exposure vulnerabilities.
-- Reference OWASP Top 10.
-- Provide code and screenshots.
 
-## 12. Discussion on the Secure Code
-- Explain how vulnerabilities were mitigated (OWASP Cheat Sheets, security headers, CSRF, session management, logging, monitoring).
-- Provide code and screenshots.
+## 11. Insecure Code: Vulnerabilities and Examples
+
+This section presents the **insecure implementation** first, with code snippets and explanations for each vulnerability. Only one version (insecure or secure) should be active in the codebase at a time.
+
+### SQL Injection (Insecure Example)
+```js
+// Vulnerable: direct string interpolation, no user_id
+app.post('/posts', (req, res) => {
+	const { title, content } = req.body;
+	if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+	const sql = `INSERT INTO posts (title, content) VALUES ('${title}', '${content}')`;
+	db.run(sql, function(err) {
+		if (err) return res.status(400).json({ error: err.message });
+		res.json({ id: this.lastID, title, content });
+	});
+});
+```
+**Explanation:** This endpoint is vulnerable to SQL Injection because user input is directly interpolated into the SQL query string without sanitization or parameterization.
+
+### Cross-Site Scripting (XSS) (Insecure Example)
+```js
+// Insecure: Get all posts (no output encoding, XSS possible, no auth)
+app.get('/posts', (req, res) => {
+	db.all('SELECT * FROM posts', [], (err, rows) => {
+		if (err) return res.status(500).json({ error: err.message });
+		res.json(rows);
+	});
+});
+```
+**Explanation:** No output encoding or sanitization is performed, so malicious scripts in post content can be executed in the browser.
+
+### Sensitive Data Exposure (Insecure Example)
+```js
+// Insecure: Passwords stored in plaintext (if not using bcrypt)
+// Example (not recommended):
+db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, password]);
+```
+**Explanation:** Storing passwords in plaintext exposes users to credential theft if the database is compromised.
+
+**References:**
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+
+---
+
+## 12. Secure Code: Mitigations and Best Practices
+
+This section presents the **secure implementation** after the insecure code, with code snippets and explanations for each mitigation. Only one version (insecure or secure) should be active in the codebase at a time.
+
+### SQL Injection Mitigation (Secure Example)
+```js
+// Secure: Use parameterized queries and authentication
+app.post('/posts', authenticateToken, (req, res) => {
+	const { title, content } = req.body;
+	const userId = req.user.id;
+	if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+	db.run('INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)', [title, content, userId], function(err) {
+		if (err) return res.status(400).json({ error: err.message });
+		res.json({ id: this.lastID, title, content });
+	});
+});
+```
+**Explanation:** This endpoint uses parameterized queries to prevent SQL Injection and requires authentication.
+
+### XSS Mitigation (Secure Example)
+```js
+// Secure: Output encoding and input validation (frontend and backend)
+// Example: Use libraries like DOMPurify on the frontend, and validate/sanitize input on the backend.
+```
+**Explanation:** Output encoding and input validation prevent malicious scripts from being executed.
+
+### Sensitive Data Protection (Secure Example)
+```js
+// Secure: Passwords hashed with bcrypt
+const hashedPassword = bcrypt.hashSync(password, 10);
+db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
+```
+**Explanation:** Passwords are hashed before storage, protecting user credentials.
+
+**Additional Mitigations:**
+- Security headers (Helmet)
+- CSRF protection
+- Session management (JWT, HTTP-only cookies)
+- Logging and monitoring
+
+**References:**
+- [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/)
+
 
 ## 13. Ethics Question
 *Discuss three Software Engineering Code of Ethics principles and actions taken regarding discovered vulnerabilities.*

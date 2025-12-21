@@ -16,13 +16,8 @@ function LoginUser() {
     e.preventDefault();
     axios.post('http://localhost:4000/login', form)
       .then(res => {
-        if (res.data.token) {
-          localStorage.setItem('token', res.data.token);
-          setMessage('Login successful!');
-          setTimeout(() => navigate('/posts'), 500); // Redirect after short delay
-        } else {
-          setMessage('Login failed: No token received.');
-        }
+        setMessage('Login successful!');
+        setTimeout(() => navigate('/posts'), 500); // Redirect after short delay
       })
       .catch(() => setMessage('Login failed.'));
   };
