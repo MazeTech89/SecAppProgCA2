@@ -1,0 +1,17 @@
+# Java
+/target/
+*.log
+*.class
+*.jar
+*.war
+*.iml
+/.idea/
+.DS_Store
+.env
+application-local.properties
+application-dev.properties
+application-prod.properties
+
+# Ignore progress and plan markdown files
+.github/java-upgrade/progress.md
+.github/java-upgrade/plan.md
