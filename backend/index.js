@@ -105,25 +105,16 @@ app.put('/posts/:id', authenticateToken, (req, res) => {
 });
 
 
-// Secure: Delete post (uses parameterized queries)
-app.delete('/posts/:id', authenticateToken, (req, res) => {
+// Insecure: Delete post (vulnerable to SQL Injection)
+app.delete('/posts/:id', (req, res) => {
   const { id } = req.params;
-  db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, req.user.id], function(err) {
+  // Vulnerable: direct string interpolation
+  const sql = `DELETE FROM posts WHERE id = ${id}`;
+  db.run(sql, function(err) {
     if (err) return res.status(400).json({ error: err.message });
     res.json({ message: 'Post deleted', id });
   });
 });
-// JWT authentication middleware
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided' });
-  jwt.verify(token, SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid token' });
-    req.user = user;
-    next();
-  });
-}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
