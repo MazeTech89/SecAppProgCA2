@@ -161,6 +161,8 @@ High-Level Architectural Diagram
 
 ### Wireframes
 
+![All Wireframes](docs/wireframes/all-wireframes.svg)
+
 Login Page
 
 ![Login Wireframe](docs/wireframes/login-wireframe.svg)
