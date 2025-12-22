@@ -160,7 +160,70 @@ High-Level Architectural Diagram
 	- The application is designed to clearly separate secure and insecure code for assessment and learning purposes.
 
 ### Wireframes
-*Insert wireframes for each page here.*
+
+Login Page
+
+![Login Wireframe](docs/wireframes/login-wireframe.svg)
+
+
+-----------------------------
+|        Login              |
+|---------------------------|
+| Username: [___________]   |
+| Password: [___________]   |
+| [ Login ]   [ Register ]  |
+|---------------------------|
+| [Error/Success Message]   |
+-----------------------------
+
+
+Register Page
+
+
+-----------------------------
+|      Register             |
+|---------------------------|
+| Username: [___________]   |
+| Password: [___________]   |
+| [ Register ]   [ Login ]  |
+|---------------------------|
+| [Error/Success Message]   |
+-----------------------------
+
+
+User List & Blog Posts Page (after login)
+
+
+---------------------------------------------------
+|  [Logout]   [User List]   [Blog Posts]           |
+|-------------------------------------------------|
+| User List:                                      |
+|  - user1                                        |
+|  - user2                                        |
+|-------------------------------------------------|
+| Blog Posts:                                     |
+|  [Title] by User [id]: [Content]                |
+|  [Edit] [Delete]                                |
+|-------------------------------------------------|
+| [Create/Edit Post Form]                         |
+| Title:    [___________]                         |
+| Content:  [___________]                         |
+| [Create/Update Post]                            |
+|-------------------------------------------------|
+| [Error/Success Message]                         |
+---------------------------------------------------
+
+
+Navigation (all pages)
+
+
+-----------------------------
+| [Login] [Register]         |
+| (if not authenticated)     |
+| [User List] [Logout]       |
+| (if authenticated)         |
+-----------------------------
+
 
 ## 6. Use-Case Diagram
 *Insert use-case diagram here.*
