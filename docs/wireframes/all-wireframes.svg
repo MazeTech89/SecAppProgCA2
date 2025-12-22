@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1550" viewBox="0 0 1200 1550">
+  <defs>
+    <style>
+      .title { font: 700 28px Arial, sans-serif; fill: #111; }
+      .subtitle { font: 700 18px Arial, sans-serif; fill: #111; }
+      .label { font: 14px Arial, sans-serif; fill: #111; }
+      .muted { font: 14px Arial, sans-serif; fill: #555; }
+      .box { fill: #fff; stroke: #111; stroke-width: 2; }
+      .field { fill: #fff; stroke: #111; stroke-width: 1.5; }
+      .btn { fill: #f7f7f7; stroke: #111; stroke-width: 1.5; }
+      .divider { stroke: #111; stroke-width: 1; }
+    </style>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="1550" fill="#fff"/>
+  <text x="40" y="60" class="title">Wireframes (Secure App Demo)</text>
+  <text x="40" y="92" class="muted">Login, Register, Authenticated Dashboard (User List + Blog Posts), and Navigation states</text>
+
+  <!-- LOGIN WIREFRAME -->
+  <text x="40" y="145" class="subtitle">Login Page</text>
+  <rect x="40" y="165" width="520" height="320" class="box"/>
+  <line x1="40" y1="205" x2="560" y2="205" class="divider"/>
+  <text x="60" y="195" class="label">Login</text>
+
+  <text x="60" y="245" class="label">Username</text>
+  <rect x="160" y="228" width="360" height="32" class="field"/>
+
+  <text x="60" y="295" class="label">Password</text>
+  <rect x="160" y="278" width="360" height="32" class="field"/>
+
+  <rect x="160" y="330" width="160" height="38" class="btn"/>
+  <text x="212" y="355" class="label">Login</text>
+
+  <rect x="360" y="330" width="160" height="38" class="btn"/>
+  <text x="402" y="355" class="label">Register</text>
+
+  <line x1="40" y1="395" x2="560" y2="395" class="divider"/>
+  <text x="60" y="425" class="muted">Message area (error/success)</text>
+  <rect x="60" y="438" width="460" height="30" class="field"/>
+
+  <!-- REGISTER WIREFRAME -->
+  <text x="640" y="145" class="subtitle">Register Page</text>
+  <rect x="640" y="165" width="520" height="320" class="box"/>
+  <line x1="640" y1="205" x2="1160" y2="205" class="divider"/>
+  <text x="660" y="195" class="label">Register</text>
+
+  <text x="660" y="245" class="label">Username</text>
+  <rect x="760" y="228" width="360" height="32" class="field"/>
+
+  <text x="660" y="295" class="label">Password</text>
+  <rect x="760" y="278" width="360" height="32" class="field"/>
+
+  <rect x="760" y="330" width="160" height="38" class="btn"/>
+  <text x="798" y="355" class="label">Register</text>
+
+  <rect x="960" y="330" width="160" height="38" class="btn"/>
+  <text x="1015" y="355" class="label">Login</text>
+
+  <line x1="640" y1="395" x2="1160" y2="395" class="divider"/>
+  <text x="660" y="425" class="muted">Message area (error/success)</text>
+  <rect x="660" y="438" width="460" height="30" class="field"/>
+
+  <!-- DASHBOARD WIREFRAME -->
+  <text x="40" y="545" class="subtitle">Authenticated Page (User List + Blog Posts)</text>
+  <rect x="40" y="565" width="1120" height="820" class="box"/>
+
+  <!-- Top nav inside dashboard -->
+  <rect x="40" y="565" width="1120" height="60" class="field"/>
+  <text x="60" y="602" class="label">[Logout]</text>
+  <text x="160" y="602" class="label">[User List]</text>
+  <text x="275" y="602" class="label">[Blog Posts]</text>
+
+  <!-- Left column: user list -->
+  <text x="60" y="665" class="label">User List</text>
+  <rect x="60" y="685" width="340" height="320" class="field"/>
+  <text x="80" y="720" class="muted">- user1</text>
+  <text x="80" y="750" class="muted">- user2</text>
+  <text x="80" y="780" class="muted">- user3</text>
+
+  <!-- Right column: blog posts list -->
+  <text x="430" y="665" class="label">Blog Posts</text>
+  <rect x="430" y="685" width="710" height="320" class="field"/>
+
+  <!-- Post item 1 -->
+  <rect x="450" y="710" width="670" height="70" class="field"/>
+  <text x="465" y="738" class="label">Title</text>
+  <text x="535" y="738" class="muted">(by user_id)</text>
+  <text x="465" y="762" class="muted">Content preview…</text>
+  <rect x="980" y="725" width="60" height="28" class="btn"/>
+  <text x="995" y="745" class="label">Edit</text>
+  <rect x="1050" y="725" width="70" height="28" class="btn"/>
+  <text x="1060" y="745" class="label">Delete</text>
+
+  <!-- Post item 2 -->
+  <rect x="450" y="790" width="670" height="70" class="field"/>
+  <text x="465" y="818" class="label">Title</text>
+  <text x="535" y="818" class="muted">(by user_id)</text>
+  <text x="465" y="842" class="muted">Content preview…</text>
+  <rect x="980" y="805" width="60" height="28" class="btn"/>
+  <text x="995" y="825" class="label">Edit</text>
+  <rect x="1050" y="805" width="70" height="28" class="btn"/>
+  <text x="1060" y="825" class="label">Delete</text>
+
+  <!-- Create/Edit post form -->
+  <text x="60" y="1060" class="label">Create / Edit Post Form</text>
+  <rect x="60" y="1080" width="1080" height="240" class="field"/>
+
+  <text x="80" y="1120" class="label">Title</text>
+  <rect x="160" y="1098" width="960" height="34" class="field"/>
+
+  <text x="80" y="1175" class="label">Content</text>
+  <rect x="160" y="1150" width="960" height="70" class="field"/>
+
+  <rect x="160" y="1240" width="200" height="40" class="btn"/>
+  <text x="190" y="1266" class="label">Create / Update</text>
+
+  <!-- Message area -->
+  <text x="60" y="1360" class="muted">Message area (error/success)</text>
+  <rect x="60" y="1372" width="1080" height="34" class="field"/>
+
+  <!-- NAVIGATION STATES -->
+  <text x="40" y="1450" class="subtitle">Navigation States</text>
+  <text x="40" y="1478" class="muted">Shown at top of app; options depend on authentication</text>
+
+  <rect x="40" y="1492" width="520" height="46" class="field"/>
+  <text x="60" y="1522" class="label">Logged out:</text>
+  <text x="165" y="1522" class="label">[Login] [Register]</text>
+
+  <rect x="640" y="1492" width="520" height="46" class="field"/>
+  <text x="660" y="1522" class="label">Logged in:</text>
+  <text x="755" y="1522" class="label">[User List] [Logout]</text>
+</svg>

@@ -6,3 +6,6 @@ dist/
 .DS_Store
 *.log
 backend_old/
+
+# Office/OneDrive temp files
+~WRL*.tmp

@@ -1,0 +1,121 @@
+classDiagram
+direction LR
+
+class User {
+  +int id
+  +string username
+  +string passwordHash
+}
+
+class Post {
+  +int id
+  +int user_id
+  +string title
+  +string content
+  +datetime created_at
+}
+
+User "1" --> "*" Post : owns
+
+class SQLiteDatabase {
+  +run(sql, params)
+  +get(sql, params)
+  +all(sql, params)
+}
+SQLiteDatabase "1" --> "*" User : stores
+SQLiteDatabase "1" --> "*" Post : stores
+
+class ApiServer {
+  +register(username, password)
+  +login(username, password)
+  +logout()
+  +getCsrfToken()
+  +getUsers()
+  +listPosts()
+  +createPost(title, content)
+  +updatePost(id, title, content)
+  +deletePost(id)
+}
+
+class AuthMiddleware {
+  +authenticateToken(req, res, next)
+}
+
+class CsrfProtection {
+  +validateCsrf(req, res, next)
+}
+
+class JwtService {
+  +sign(payload)
+  +verify(token)
+}
+
+class PasswordHasher {
+  +hash(password)
+  +compare(password, hash)
+}
+
+ApiServer --> SQLiteDatabase : uses
+ApiServer ..> AuthMiddleware : protects routes
+ApiServer ..> CsrfProtection : protects write ops
+ApiServer ..> JwtService : signs/verifies JWT
+ApiServer ..> PasswordHasher : hashes/compares
+
+class ReactApp {
+  +boolean isAuthenticated
+  +handleLogin()
+  +handleLogout()
+}
+
+class LoginUser {
+  +handleSubmit()
+}
+
+class RegisterUser {
+  +handleSubmit()
+}
+
+class LogoutUser {
+  +handleLogout()
+}
+
+class UserList {
+  +fetchUsers()
+}
+
+class BlogPosts {
+  +fetchPosts()
+  +handleSubmit()
+  +handleEdit(post)
+  +handleDelete(id)
+}
+
+class CsrfClient {
+  +getCsrfToken()
+}
+
+class HttpClient {
+  +get(url, headers)
+  +post(url, body, headers)
+  +put(url, body, headers)
+  +delete(url, headers)
+}
+
+ReactApp --> LoginUser
+ReactApp --> RegisterUser
+ReactApp --> LogoutUser
+ReactApp --> UserList
+ReactApp --> BlogPosts
+
+LoginUser ..> CsrfClient
+RegisterUser ..> CsrfClient
+LogoutUser ..> CsrfClient
+BlogPosts ..> CsrfClient
+
+LoginUser ..> HttpClient : axios
+RegisterUser ..> HttpClient : axios
+LogoutUser ..> HttpClient : axios
+UserList ..> HttpClient : axios
+BlogPosts ..> HttpClient : axios
+
+HttpClient ..> ApiServer : HTTP

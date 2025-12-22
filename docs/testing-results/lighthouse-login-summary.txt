@@ -1,0 +1,17 @@
+﻿Lighthouse (Chrome DevTools) Results
+URL: http://localhost:3000/login
+Fetch Time (UTC): 2025-12-22T14:37:06.726Z
+Tool: Lighthouse 12.8.2
+
+Category scores:
+- Performance: 72
+- Accessibility: 93
+- Best Practices: 96
+- SEO: 100
+
+Key metrics:
+- FCP: 0.6Â s
+- LCP: 3.8Â s
+- CLS: 0
+- Total Blocking Time: 690Â ms
+- Speed Index: 1.7Â s

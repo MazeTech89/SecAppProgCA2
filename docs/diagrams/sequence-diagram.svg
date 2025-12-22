@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1340" viewBox="0 0 1500 1340" role="img" aria-label="Sequence diagram for secure login and create post flow">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#111" />
+    </marker>
+    <marker id="arrowOpen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10" fill="none" stroke="#111" stroke-width="2" />
+    </marker>
+    <style>
+      .bg { fill: #ffffff; }
+      .laneTitle { font: 700 16px Arial, sans-serif; fill: #111; }
+      .msg { font: 12px Arial, sans-serif; fill: #111; }
+      .note { font: 12px Arial, sans-serif; fill: #111; }
+      .lifeline { stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 6 6; }
+      .box { fill: #f3f4f6; stroke: #111; stroke-width: 2; rx: 8; }
+      .alt { fill: #fff7ed; stroke: #111; stroke-width: 2; rx: 10; }
+      .line { stroke: #111; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+      .return { stroke: #111; stroke-width: 2; stroke-dasharray: 6 6; fill: none; marker-end: url(#arrowOpen); }
+      .divider { stroke: #e5e7eb; stroke-width: 2; }
+      .small { font: 11px Arial, sans-serif; fill: #111; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1500" height="1340" />
+
+  <!-- Participants -->
+  <rect class="box" x="60" y="40" width="220" height="44" />
+  <text class="laneTitle" x="80" y="68">User</text>
+
+  <rect class="box" x="310" y="40" width="220" height="44" />
+  <text class="laneTitle" x="330" y="68">React UI</text>
+
+  <rect class="box" x="560" y="40" width="220" height="44" />
+  <text class="laneTitle" x="580" y="68">GET /csrf-token</text>
+
+  <rect class="box" x="810" y="40" width="220" height="44" />
+  <text class="laneTitle" x="830" y="68">Express API</text>
+
+  <rect class="box" x="1060" y="40" width="220" height="44" />
+  <text class="laneTitle" x="1080" y="68">SQLite3 DB</text>
+
+  <!-- Lifelines -->
+  <line class="lifeline" x1="170" y1="90" x2="170" y2="1290" />
+  <line class="lifeline" x1="420" y1="90" x2="420" y2="1290" />
+  <line class="lifeline" x1="670" y1="90" x2="670" y2="1290" />
+  <line class="lifeline" x1="920" y1="90" x2="920" y2="1290" />
+  <line class="lifeline" x1="1170" y1="90" x2="1170" y2="1290" />
+
+  <!-- Main flow messages -->
+  <!-- 1 User -> UI -->
+  <path class="line" d="M 170 120 L 420 120" />
+  <text class="msg" x="250" y="110">Open Login page</text>
+
+  <!-- 2 UI -> CSRF -->
+  <path class="line" d="M 420 155 L 670 155" />
+  <text class="msg" x="468" y="145">Request CSRF token</text>
+
+  <!-- 3 CSRF -> UI (return) -->
+  <path class="return" d="M 670 190 L 420 190" />
+  <text class="msg" x="500" y="180">csrfToken</text>
+
+  <line class="divider" x1="80" y1="220" x2="1420" y2="220" />
+
+  <!-- 4 User -> UI submit creds -->
+  <path class="line" d="M 170 250 L 420 250" />
+  <text class="msg" x="210" y="240">Submit username + password</text>
+
+  <!-- 5 UI -> API login -->
+  <path class="line" d="M 420 285 L 920 285" />
+  <text class="msg" x="520" y="275">POST /login (X-CSRF-Token)</text>
+
+  <!-- 6 API -> DB select user -->
+  <path class="line" d="M 920 320 L 1170 320" />
+  <text class="msg" x="950" y="310">SELECT user WHERE username = ?</text>
+
+  <!-- 7 DB -> API return user -->
+  <path class="return" d="M 1170 355 L 920 355" />
+  <text class="msg" x="945" y="345">user row (password hash)</text>
+
+  <!-- 8 API -> UI token -->
+  <path class="return" d="M 920 390 L 420 390" />
+  <text class="msg" x="540" y="380">200 OK { token }</text>
+
+  <!-- 9 UI self: store token -->
+  <path class="line" d="M 420 425 C 470 425 470 455 420 455" />
+  <text class="msg" x="480" y="445">Store JWT in localStorage</text>
+
+  <line class="divider" x1="80" y1="485" x2="1420" y2="485" />
+
+  <!-- 10 user navigates -->
+  <path class="line" d="M 170 515 L 420 515" />
+  <text class="msg" x="205" y="505">Navigate to User List / Blog Posts</text>
+
+  <!-- 11 UI -> API get users -->
+  <path class="line" d="M 420 550 L 920 550" />
+  <text class="msg" x="505" y="540">GET /users (Authorization: Bearer JWT)</text>
+
+  <!-- 12 API -> DB -->
+  <path class="line" d="M 920 585 L 1170 585" />
+  <text class="msg" x="950" y="575">SELECT id, username FROM users</text>
+
+  <!-- 13 DB -> API -->
+  <path class="return" d="M 1170 620 L 920 620" />
+  <text class="msg" x="990" y="610">user list</text>
+
+  <!-- 14 API -> UI -->
+  <path class="return" d="M 920 655 L 420 655" />
+  <text class="msg" x="560" y="645">200 OK users</text>
+
+  <!-- 15 UI -> API get posts -->
+  <path class="line" d="M 420 690 L 920 690" />
+  <text class="msg" x="520" y="680">GET /posts (Authorization: Bearer JWT)</text>
+
+  <!-- 16 API -> DB -->
+  <path class="line" d="M 920 725 L 1170 725" />
+  <text class="msg" x="980" y="715">SELECT * FROM posts</text>
+
+  <!-- 17 DB -> API -->
+  <path class="return" d="M 1170 760 L 920 760" />
+  <text class="msg" x="1020" y="750">posts</text>
+
+  <!-- 18 API -> UI -->
+  <path class="return" d="M 920 795 L 420 795" />
+  <text class="msg" x="505" y="785">200 OK posts (output-encoded)</text>
+
+  <line class="divider" x1="80" y1="825" x2="1420" y2="825" />
+
+  <!-- 19 Create post -->
+  <path class="line" d="M 170 855 L 420 855" />
+  <text class="msg" x="190" y="845">Submit Create Post (title, content)</text>
+
+  <path class="line" d="M 420 890 L 670 890" />
+  <text class="msg" x="440" y="880">Request CSRF token (if not cached)</text>
+
+  <path class="return" d="M 670 925 L 420 925" />
+  <text class="msg" x="515" y="915">csrfToken</text>
+
+  <!-- Create post request -->
+  <path class="line" d="M 420 960 L 920 960" />
+  <text class="msg" x="505" y="950">POST /posts (Authorization + X-CSRF-Token)</text>
+
+  <path class="line" d="M 920 995 L 1170 995" />
+  <text class="msg" x="935" y="985">INSERT INTO posts (user_id,title,content) VALUES (JWT.id,?,?)</text>
+
+  <path class="return" d="M 1170 1030 L 920 1030" />
+  <text class="msg" x="965" y="1020">insert ok (new id)</text>
+
+  <path class="return" d="M 920 1065 L 420 1065" />
+  <text class="msg" x="555" y="1055">200 OK created post</text>
+
+  <path class="return" d="M 420 1100 L 170 1100" />
+  <text class="msg" x="205" y="1090">Show success + refresh list</text>
+
+  <!-- Alt blocks (compact summary) -->
+  <rect class="alt" x="80" y="1140" width="1340" height="70" />
+  <text class="laneTitle" x="100" y="1165">alt JWT missing/invalid/expired</text>
+  <text class="small" x="100" y="1190">API returns 401/403; UI redirects to Login</text>
+
+  <rect class="alt" x="80" y="1225" width="1340" height="70" />
+  <text class="laneTitle" x="100" y="1250">alt CSRF invalid on write</text>
+  <text class="small" x="100" y="1275">API returns 403; no state change</text>
+
+</svg>
