@@ -17,7 +17,7 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-const SECRET = 'your_jwt_secret';
+const SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
 app.use(helmet()); // Security headers
 app.use(cors({
@@ -38,7 +38,8 @@ app.post('/logout', csrfProtection, (req, res) => {
 });
 
 // SQLite3 database setup
-const db = new sqlite3.Database('./database.db', (err) => {
+const DB_PATH = process.env.DB_PATH || './database.db';
+const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Could not connect to database', err);
   } else {
@@ -194,6 +195,7 @@ app.put('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
   if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
   db.run('UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?', [title, content, id, req.user.id], function(err) {
     if (err) return res.status(400).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Post not found or not owned' });
     res.json({ id, title, content });
   });
 });
@@ -204,6 +206,7 @@ app.delete('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
   const { id } = req.params;
   db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, req.user.id], function(err) {
     if (err) return res.status(400).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Post not found or not owned' });
     res.json({ message: 'Post deleted', id });
   });
 });
@@ -241,6 +244,10 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+module.exports = { app, db };
+
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}

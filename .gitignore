@@ -1,2 +1,22 @@
 # OS / editor temp files
 ~WRL*.tmp
+
+# Generated diagrams (ignore as requested)
+docs/diagrams/class-diagram.mmd
+docs/diagrams/class-diagram.svg
+docs/diagrams/sequence-diagram.mmd
+docs/diagrams/sequence-diagram.svg
+
+# Documentation artifacts (ignore entire folder as requested)
+docs/
+
+# Root documentation files (ignore as requested)
+SecureAppProjectDocumentation.md
+Software Application Programming Project Documentation.docx
+
+# Dependencies
+**/node_modules/
+
+# Playwright artifacts
+e2e/test-results/
+e2e/playwright-report/
