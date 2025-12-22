@@ -49,7 +49,27 @@ In this project, an open-source web application is developed using Node.js with 
 
 ## Technical Overview
 
-This project is a full-stack web application built with a React frontend, an Express.js backend, and a SQLite3 database. The backend exposes both secure and intentionally insecure RESTful API endpoints to demonstrate common web vulnerabilities (such as SQL Injection, XSS, and Sensitive Data Exposure) and their mitigations. Security features in the secure implementation include JWT-based authentication, CSRF protection, security headers via Helmet, and request logging with Morgan. The application is designed for educational purposes, focusing on secure coding practices, vulnerability demonstration, and clear documentation rather than UI/UX design.
+This project is a full-stack web application built with a React frontend, an Express.js backend, and a SQLite3 database. The backend exposes both secure and intentionally insecure RESTful API endpoints to demonstrate common web vulnerabilities (such as SQL Injection, XSS, and Sensitive Data Exposure) and their mitigations. Security features in the secure implementation include:
+
+- JWT-based authentication (stateless, token in localStorage)
+- CSRF protection (using csurf middleware)
+- Security headers (Helmet)
+- Request logging (Morgan)
+- Input validation and output encoding
+- Password hashing (bcrypt)
+- CORS with credentials for frontend-backend communication
+- Secure /users endpoint (returns only id and username, requires authentication)
+
+The application is designed for educational purposes, focusing on secure coding practices, vulnerability demonstration, and clear documentation rather than UI/UX design. The codebase is maintained in two branches: `secure` (active, with all secure features enabled) and `insecure` (with vulnerabilities for demonstration). Only one branch should be active at a time for assessment.
+### Secure Endpoints Summary
+
+- `/register` (POST): Register a new user (CSRF protected, password hashed)
+- `/login` (POST): Authenticate user, returns JWT token (CSRF protected)
+- `/logout` (POST): Instructs client to remove JWT (CSRF protected)
+- `/users` (GET): Returns all users (id, username only, requires authentication)
+- `/posts` (GET, POST, PUT, DELETE): CRUD for blog posts (requires authentication, CSRF protected for write operations)
+
+All secure endpoints require proper authentication and CSRF tokens where appropriate. Insecure endpoints are commented out in the secure branch.
 
 ## 3. Software Requirement Specification
 
@@ -182,7 +202,7 @@ High-Level Architectural Diagram
 | 8 | Ethics | 10% |
 
 ## 15. Appendix B
-- Link to GitHub:
+- Link to GitHub: [YOUR_GITHUB_REPO_URL_HERE] (branch: secure)
 - Link to Video Demonstration:
 
 ---
