@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { getCsrfToken } from './csrf';
 
 function RegisterUser() {
   const [form, setForm] = useState({ username: '', email: '', password: '' });
@@ -9,12 +10,14 @@ function RegisterUser() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    // Only username and password are used in backend
+    const csrfToken = await getCsrfToken();
     axios.post('http://localhost:4000/register', {
       username: form.username,
       password: form.password
+    }, {
+      headers: { 'X-CSRF-Token': csrfToken }
     })
       .then(res => setMessage('Registration successful!'))
       .catch(() => setMessage('Registration failed.'));

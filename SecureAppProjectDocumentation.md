@@ -1,4 +1,3 @@
-
 # Secure Application Programming Project Documentation
 
 ## Table of Contents
@@ -48,6 +47,10 @@ Agile is chosen for this project because it enables rapid response to feedback, 
 ## 2. Introduction
 In this project, an open-source web application is developed using Node.js with Express for the backend and React for the frontend. The database is SQLite3. The application demonstrates both vulnerable (insecure) and secure coding practices, focusing on SQL Injection, XSS, and Sensitive Data Exposure. Two implementations are provided: an insecure version (with vulnerabilities) and a secure version (with mitigations and security features).
 
+## Technical Overview
+
+This project is a full-stack web application built with a React frontend, an Express.js backend, and a SQLite3 database. The backend exposes both secure and intentionally insecure RESTful API endpoints to demonstrate common web vulnerabilities (such as SQL Injection, XSS, and Sensitive Data Exposure) and their mitigations. Security features in the secure implementation include JWT-based authentication, CSRF protection, security headers via Helmet, and request logging with Morgan. The application is designed for educational purposes, focusing on secure coding practices, vulnerability demonstration, and clear documentation rather than UI/UX design.
+
 ## 3. Software Requirement Specification
 
 ### General Description
@@ -91,8 +94,50 @@ Sensitive data (e.g., passwords) is never stored in plaintext. The application i
 *Insert ERD diagram and explanation here.*
 
 ## 5. Technical Specification
-### High-Level Architectural Diagram
-*Insert architectural diagram and description here.*
+
+High-Level Architectural Diagram
+
++-------------------+         HTTP(S)         +-------------------+         SQL         +-------------------+
+|    React Frontend | <--------------------> |  Express.js API   | <----------------> |   SQLite3 DB      |
+|  (JavaScript, JSX)|   RESTful API calls    | (Node.js, Helmet, |   SQL Queries     | (File-based DB)   |
+|                   |                       |  Morgan, csurf,   |                  |                   |
+| - User Interface  |                       |  JWT, bcrypt)     |                  |                   |
++-------------------+                       +-------------------+                  +-------------------+
+
+
+
+
+
+
+**Description:**
+- **React Frontend** (http://localhost:3000):
+	- Provides the user interface for registration, login, and blog post management.
+	- Communicates with the backend exclusively via RESTful API calls using the Fetch API.
+	- Handles CSRF tokens and authentication tokens (JWT) as provided by the backend.
+
+- **Express.js Backend** (Node.js, http://localhost:4000):
+	- Exposes both secure and intentionally insecure REST API endpoints for demonstration and assessment.
+	- Secure endpoints implement:
+		- JWT-based authentication (stateless, HTTP-only cookies)
+		- CSRF protection (using csurf middleware)
+		- Security headers (Helmet)
+		- Request logging (Morgan)
+		- Input validation and output encoding
+		- Password hashing (bcrypt)
+		- CORS with credentials for frontend-backend communication
+	- Insecure endpoints deliberately omit these protections to demonstrate vulnerabilities (e.g., SQL Injection, XSS, plaintext passwords).
+	- Only the backend accesses the database directly; the frontend never interacts with the database.
+
+- **SQLite3 Database**:
+	- Stores user credentials (with hashed passwords in the secure version) and blog post data.
+	- Is file-based and only accessible by the backend server.
+	- No direct access from the frontend or external clients.
+
+- **Security Boundaries & Data Flow:**
+	- All sensitive operations (authentication, data storage, business logic) are handled by the backend.
+	- The frontend never receives or stores plaintext passwords or sensitive data.
+	- Security features (authentication, CSRF, headers, logging) are enforced only on secure endpoints; insecure endpoints are available for educational testing and demonstration.
+	- The application is designed to clearly separate secure and insecure code for assessment and learning purposes.
 
 ### Wireframes
 *Insert wireframes for each page here.*
@@ -145,3 +190,5 @@ Sensitive data (e.g., passwords) is never stored in plaintext. The application i
 *References to be added in formal academic style as required.*
 
 *Use this document to compile all required sections for your final submission.*
+
+

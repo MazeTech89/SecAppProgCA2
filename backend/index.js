@@ -1,3 +1,7 @@
+
+// ...existing code...
+// ...existing code...
+// ...existing code...
 // Basic Express server setup for Secure Application Programming project
 
 const express = require('express');
@@ -15,7 +19,6 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const SECRET = 'your_jwt_secret';
 
-
 app.use(helmet()); // Security headers
 app.use(cors({
   origin: 'http://localhost:3000',
@@ -28,6 +31,12 @@ app.use(morgan('combined')); // Logging
 // CSRF protection (cookie-based)
 const csrfProtection = csrf({ cookie: true });
 
+// Logout endpoint (stateless JWT: instruct client to remove token)
+app.post('/logout', csrfProtection, (req, res) => {
+  // For stateless JWT, just tell client to remove token
+  res.json({ message: 'Logged out. Please remove token on client.' });
+});
+
 // SQLite3 database setup
 const db = new sqlite3.Database('./database.db', (err) => {
   if (err) {
@@ -36,7 +45,6 @@ const db = new sqlite3.Database('./database.db', (err) => {
     console.log('Connected to SQLite3 database.');
   }
 });
-
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +63,7 @@ db.serialize(() => {
 });
 
 
-// ================= INSECURE ENDPOINTS (DEACTIVATED) =================
+/* ================= INSECURE ENDPOINTS (DEACTIVATED) =================
 // To activate, comment out the secure endpoints and uncomment these.
 // These endpoints demonstrate SQL Injection, XSS, and Sensitive Data Exposure;
 //
@@ -123,7 +131,7 @@ app.get('/insecure/users', (req, res) => {
   });
 });
 //
-// ================= END INSECURE ENDPOINTS =================
+// ================= END INSECURE ENDPOINTS =================*/
 
 
 // Register endpoint (secure version)
@@ -199,18 +207,26 @@ app.delete('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
     res.json({ message: 'Post deleted', id });
   });
 });
+
+// Secure: Get all users (id and username only, requires authentication)
+app.get('/users', authenticateToken, (req, res) => {
+  db.all('SELECT id, username FROM users', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
 // JWT authentication middleware
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No token provided' });
+
   jwt.verify(token, SECRET, (err, user) => {
     if (err) return res.status(403).json({ error: 'Invalid token' });
     req.user = user;
     next();
   });
 }
-
 
 // CSRF token endpoint for frontend (if needed)
 app.get('/csrf-token', csrfProtection, (req, res) => {

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { getCsrfToken } from './csrf';
 
-function LoginUser() {
+function LoginUser({ onLogin }) {
   const [form, setForm] = useState({ username: '', password: '' });
   const [message, setMessage] = useState('');
 
@@ -9,10 +10,19 @@ function LoginUser() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    axios.post('http://localhost:4000/login', form)
-      .then(res => setMessage('Login successful!'))
+    const csrfToken = await getCsrfToken();
+    axios.post('http://localhost:4000/login', form, {
+      headers: { 'X-CSRF-Token': csrfToken }
+    })
+      .then(res => {
+        setMessage('Login successful!');
+        if (res.data.token) {
+          localStorage.setItem('token', res.data.token);
+        }
+        if (onLogin) onLogin();
+      })
       .catch(() => setMessage('Login failed.'));
   };
 
