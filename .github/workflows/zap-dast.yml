@@ -1,0 +1,90 @@
+name: DAST (OWASP ZAP)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [secure, insecure]
+  pull_request:
+    branches: [secure, insecure]
+
+jobs:
+  zap:
+    name: ZAP scan (${{ matrix.branch }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [secure, insecure]
+
+    steps:
+      - name: Checkout ${{ matrix.branch }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Start backend
+        working-directory: backend
+        env:
+          PORT: 4000
+          NODE_ENV: production
+        run: |
+          nohup npm start > ../zap-backend.log 2>&1 &
+
+      - name: Start frontend
+        working-directory: frontend
+        env:
+          PORT: 3000
+          BROWSER: none
+          CI: true
+        run: |
+          nohup npm start > ../zap-frontend.log 2>&1 &
+
+      - name: Wait for services
+        run: |
+          for i in {1..60}; do
+            (curl -fsS http://localhost:4000/csrf-token >/dev/null) && (curl -fsS http://localhost:3000 >/dev/null) && exit 0
+            sleep 2
+          done
+          echo "Services did not become ready" >&2
+          exit 1
+
+      # Baseline scan is a safe default for CI; it spiders and passive-scans.
+      - name: ZAP baseline (frontend)
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:3000
+          cmd_options: '-J zap-${{ matrix.branch }}-frontend.json -r zap-${{ matrix.branch }}-frontend.html'
+
+      - name: ZAP baseline (backend)
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: http://localhost:4000/csrf-token
+          cmd_options: '-J zap-${{ matrix.branch }}-backend.json -r zap-${{ matrix.branch }}-backend.html'
+
+      - name: Upload ZAP reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-reports-${{ matrix.branch }}
+          path: |
+            zap-*.html
+            zap-*.json
+            zap-backend.log
+            zap-frontend.log

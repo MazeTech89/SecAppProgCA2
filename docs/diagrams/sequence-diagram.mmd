@@ -1,0 +1,51 @@
+sequenceDiagram
+autonumber
+
+actor User
+participant UI as React UI
+participant CSRF as GET /csrf-token
+participant API as Express API
+participant DB as SQLite3 DB
+
+User->>UI: Open Login page
+UI->>CSRF: Request CSRF token
+CSRF-->>UI: csrfToken
+
+User->>UI: Submit username + password
+UI->>API: POST /login (X-CSRF-Token)
+API->>DB: SELECT user WHERE username = ?
+DB-->>API: user row (password hash)
+API-->>UI: 200 OK { token }
+UI->>UI: Store JWT in localStorage
+
+User->>UI: Navigate to User List / Blog Posts
+UI->>API: GET /users (Authorization: Bearer JWT)
+API->>DB: SELECT id, username FROM users
+DB-->>API: user list
+API-->>UI: 200 OK users
+
+UI->>API: GET /posts (Authorization: Bearer JWT)
+API->>DB: SELECT * FROM posts
+DB-->>API: posts
+API-->>UI: 200 OK posts (output-encoded)
+
+User->>UI: Submit Create Post (title, content)
+UI->>CSRF: Request CSRF token (if not cached)
+CSRF-->>UI: csrfToken
+UI->>API: POST /posts (Authorization + X-CSRF-Token)
+API->>DB: INSERT INTO posts (user_id,title,content) VALUES (JWT.id,?,?)
+DB-->>API: insert ok (new id)
+API-->>UI: 200 OK created post
+UI-->>User: Show success + refresh list
+
+alt JWT missing/invalid/expired
+  UI->>API: Any protected request with missing/invalid JWT
+  API-->>UI: 401/403 Unauthorized
+  UI-->>User: Redirect to Login
+end
+
+alt CSRF invalid on write request
+  UI->>API: POST/PUT/DELETE with invalid CSRF token
+  API-->>UI: 403 Invalid CSRF token
+  UI-->>User: Show error; no state change
+end
