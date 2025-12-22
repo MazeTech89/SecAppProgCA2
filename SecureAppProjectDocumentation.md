@@ -228,10 +228,194 @@ Navigation (all pages)
 
 
 ## 6. Use-Case Diagram
-*Insert use-case diagram here.*
+
+The use-case diagram below provides a high-level overview of the system from the perspective of the primary user. To keep the diagram concise, authentication is modeled as a reusable use-case that is always included by protected actions.
+
+![Use-Case Diagram](docs/diagrams/use-case-diagram.svg)
+
+```mermaid
+usecaseDiagram
+actor Visitor as V
+actor "Authenticated User" as U
+
+rectangle "Secure Blog Application" {
+	(Register Account) as UC_Register
+	(Authenticate User) as UC_Auth
+	(View User List) as UC_ViewUsers
+	(View Blog Posts) as UC_ViewPosts
+	(Create Blog Post) as UC_CreatePost
+	(Manage Own Blog Posts) as UC_ManagePosts
+	(Log Out) as UC_Logout
+
+	UC_ViewUsers ..> UC_Auth : <<include>>
+	UC_ViewPosts ..> UC_Auth : <<include>>
+	UC_CreatePost ..> UC_Auth : <<include>>
+	UC_ManagePosts ..> UC_Auth : <<include>>
+	UC_Logout ..> UC_Auth : <<include>>
+}
+
+V --> UC_Register
+V --> UC_Auth
+
+U --> UC_ViewUsers
+U --> UC_ViewPosts
+U --> UC_CreatePost
+U --> UC_ManagePosts
+U --> UC_Logout
+```
 
 ## 7. Use-Case Description
-*Provide use-case descriptions using the template provided in your brief.*
+
+The following use-case descriptions correspond **exactly** to the use-case names in the Use-Case Diagram (Section 6).
+
+### Use-Case: Register Account
+
+- **Short Description:** Visitor creates a new account by submitting a username and password.
+
+- **Primary Actor:** Visitor
+- **Goal:** Create a new account in the system.
+- **Preconditions:** Visitor is not currently authenticated.
+- **Trigger:** Visitor selects “Register”.
+- **Main Success Scenario:**
+	1. Visitor opens the Register page.
+	2. Visitor enters a username and password.
+	3. System validates required fields.
+	4. System securely hashes the password.
+	5. System creates the user record.
+	6. System confirms registration success.
+- **Extensions / Alternate Flows:**
+	- 3a. Missing fields → System shows validation error.
+	- 5a. Username already exists → System shows error and no account is created.
+- **Postconditions (Success):** A new user account exists in the database.
+- **Postconditions (Failure):** No new account is created.
+
+### Use-Case: Authenticate User
+
+- **Short Description:** Visitor logs in and receives a JWT token to access protected features.
+
+- **Primary Actor:** Visitor
+- **Goal:** Log in and obtain an authenticated session token.
+- **Preconditions:** Visitor has a registered account.
+- **Trigger:** Visitor selects “Login” and submits credentials.
+- **Main Success Scenario:**
+	1. Visitor opens the Login page.
+	2. Visitor enters username and password.
+	3. System validates credentials.
+	4. System issues a JWT token.
+	5. System returns token to the client.
+	6. User is now treated as an Authenticated User.
+- **Extensions / Alternate Flows:**
+	- 3a. Invalid username/password → System returns “Invalid credentials”.
+- **Postconditions (Success):** Client stores a valid JWT and can access protected endpoints.
+- **Postconditions (Failure):** No token is issued; user remains unauthenticated.
+
+### Use-Case: View User List
+
+- **Short Description:** Authenticated User views a list of users (id and username only).
+
+- **Primary Actor:** Authenticated User
+- **Goal:** View a list of registered users (id and username only).
+- **Preconditions:** User is authenticated.
+- **Includes:** Authenticate User (always required).
+- **Trigger:** User navigates to “User List”.
+- **Main Success Scenario:**
+	1. User selects “User List”.
+	2. Client sends a request with JWT token.
+	3. System validates token.
+	4. System returns list of users (id, username).
+	5. Client displays the user list.
+- **Extensions / Alternate Flows:**
+	- 3a. Missing/invalid token → System denies access (401/403) and client redirects to Login.
+- **Postconditions (Success):** User list is displayed.
+
+### Use-Case: View Blog Posts
+
+- **Short Description:** Authenticated User retrieves and views blog posts from the system.
+
+- **Primary Actor:** Authenticated User
+- **Goal:** View blog posts.
+- **Preconditions:** User is authenticated.
+- **Includes:** Authenticate User (always required).
+- **Trigger:** User navigates to “Blog Posts”.
+- **Main Success Scenario:**
+	1. User opens the posts page.
+	2. Client sends a request with JWT token.
+	3. System validates token.
+	4. System retrieves posts from the database.
+	5. System applies output encoding before returning content.
+	6. Client displays the posts.
+- **Extensions / Alternate Flows:**
+	- 3a. Missing/invalid token → System denies access (401/403).
+- **Postconditions (Success):** Blog posts are displayed to the user.
+
+### Use-Case: Create Blog Post
+
+- **Short Description:** Authenticated User creates a new blog post linked to their account.
+
+- **Primary Actor:** Authenticated User
+- **Goal:** Create a new blog post linked to the authenticated user.
+- **Preconditions:** User is authenticated.
+- **Includes:** Authenticate User (always required).
+- **Trigger:** User submits the “Create Post” form.
+- **Main Success Scenario:**
+	1. User enters a title and content.
+	2. Client requests a CSRF token (if not cached).
+	3. Client submits the post request with JWT + CSRF token.
+	4. System validates JWT and CSRF token.
+	5. System validates required fields.
+	6. System inserts the post using parameterized SQL.
+	7. System confirms creation.
+- **Extensions / Alternate Flows:**
+	- 4a. Invalid CSRF token → System rejects request (403).
+	- 5a. Missing fields → System rejects request (400).
+- **Postconditions (Success):** A new post exists and is owned by the authenticated user.
+
+### Use-Case: Manage Own Blog Posts
+
+- **Short Description:** Authenticated User edits or deletes only their own blog posts.
+
+- **Primary Actor:** Authenticated User
+- **Goal:** Update or delete blog posts owned by the authenticated user.
+- **Preconditions:** User is authenticated and owns at least one post.
+- **Includes:** Authenticate User (always required).
+- **Trigger:** User selects “Edit” or “Delete” on a post.
+- **Main Success Scenario (Edit):**
+	1. User selects “Edit” on one of their posts.
+	2. User updates title/content and submits.
+	3. Client submits request with JWT + CSRF token.
+	4. System validates JWT and CSRF token.
+	5. System updates the post using parameterized SQL and enforces ownership.
+	6. System confirms update.
+- **Main Success Scenario (Delete):**
+	1. User selects “Delete” on one of their posts.
+	2. Client submits request with JWT + CSRF token.
+	3. System validates JWT and CSRF token.
+	4. System deletes the post using parameterized SQL and enforces ownership.
+	5. System confirms deletion.
+- **Extensions / Alternate Flows:**
+	- 5a. Post not owned by user → System does not modify/delete (access denied or no-op).
+	- 4a. Invalid CSRF token → System rejects request (403).
+- **Postconditions (Success):** Post is updated or removed as requested.
+
+### Use-Case: Log Out
+
+- **Short Description:** Authenticated User ends the session by removing the stored JWT and returning to the logged-out UI.
+
+- **Primary Actor:** Authenticated User
+- **Goal:** End the user’s authenticated session on the client.
+- **Preconditions:** User is authenticated.
+- **Includes:** Authenticate User (always required).
+- **Trigger:** User selects “Logout”.
+- **Main Success Scenario:**
+	1. User selects “Logout”.
+	2. Client requests a CSRF token (if not cached).
+	3. Client calls the logout endpoint with CSRF token.
+	4. Client removes the JWT from storage.
+	5. System confirms logout response.
+	6. Client updates UI to logged-out state and shows Login/Register.
+- **Extensions / Alternate Flows:**
+	- 3a. Invalid CSRF token → System rejects request (403). Client still removes token locally.
+- **Postconditions (Success):** JWT is removed; user can no longer access protected resources.
 
 ## 8. Class Diagram
 *Insert class diagram and explain design patterns used (e.g., Singleton, Observer, DRY, SOLID).* 
