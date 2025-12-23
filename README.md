@@ -19,8 +19,13 @@ This repository contains a full-stack web application demonstrating both vulnera
 1. Open a terminal and navigate to `backend/`
 2. Run `npm install` to install dependencies
 3. Start the server with `npm start` (or `npm run dev` for development with nodemon)
+	- `npm start` automatically runs a seed step so demo users/posts exist on first run
 4. The backend runs on [http://localhost:4000](http://localhost:4000) by default
 5. If you see a ReferenceError or port conflict, ensure no other server is running and that the code is up to date.
+
+### Demo Accounts (seeded)
+- Username: `demo1` Password: `password123`
+- Username: `maze1` Password: `password123`
 
 ### Frontend
 1. Open a new terminal and navigate to `frontend/`
@@ -28,6 +33,17 @@ This repository contains a full-stack web application demonstrating both vulnera
 3. Start the frontend with `npm start`
 4. The frontend runs on [http://localhost:3000](http://localhost:3000) by default
 5. If you see errors about endpoints, ensure the backend is running and accessible at the correct port.
+
+## Demo Steps (quick)
+1. Start backend (`backend/`): `npm install` then `npm start` (auto-seeds demo data)
+2. Start frontend (`frontend/`): `npm install` then `npm start`
+3. In browser open [http://localhost:3000](http://localhost:3000)
+4. Log in with `demo1 / password123` (or `maze1 / password123`)
+5. Go to Posts and confirm you can:
+	- View seeded posts
+	- Create a post
+	- Edit your post
+	- Delete your post
 
 ### Troubleshooting
 - If you get a 400 or 500 error, check that you have registered a user and are using a valid user ID for blog posts.
