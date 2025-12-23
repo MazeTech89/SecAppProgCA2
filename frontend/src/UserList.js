@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-// UserList component fetches user data from backend
+// UserList (insecure branch)
+// This is intentionally left as a placeholder in this branch.
 function UserList() {
   // State to store user list
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
 
-  // Fetch users from backend when component mounts
+  // Placeholder behavior.
   useEffect(() => {
     // This endpoint does not exist in the backend, so just show a placeholder or remove this feature
     setUsers([]);

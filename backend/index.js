@@ -1,5 +1,8 @@
-// Basic Express server setup for Secure Application Programming project
+// InsecureApp backend (Express + SQLite)
+// Purpose: intentionally vulnerable API used to demonstrate OWASP issues (SQLi/XSS/sensitive data exposure).
+// Note: the secure implementation lives on the `main` branch; this branch keeps the unsafe behavior for screenshots/testing.
 const express = require('express');
+const http = require('http');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -8,12 +11,15 @@ const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const HOST = process.env.HOST || '127.0.0.1';
+// Demo-only secret (kept as a hard-coded constant here to highlight insecure practices).
 const SECRET = 'your_jwt_secret';
 
+// Permissive CORS for local demo.
 app.use(cors());
 app.use(bodyParser.json());
 
-// SQLite3 database setup
+// SQLite3 database setup (users + posts).
 const db = new sqlite3.Database('./database.db', (err) => {
   if (err) {
     console.error('Could not connect to database', err);
@@ -28,7 +34,7 @@ db.serialize(() => {
     username TEXT UNIQUE,
     password TEXT
   )`);
-  // Blog post table for demonstration (with XSS and SQLi vulnerabilities in insecure branch)
+  // Posts table used by the blog demo.
   db.run(`CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
@@ -45,7 +51,7 @@ db.serialize(() => {
 // Only one version (insecure or secure) should be active at a time.
 // To switch to secure endpoints, comment out this block and uncomment the secure block below.
 
-// Insecure: Register endpoint (password stored in plaintext, no validation)
+// Insecure: register (stores passwords in plaintext; minimal validation).
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
@@ -55,7 +61,7 @@ app.post('/register', (req, res) => {
   });
 });
 
-// Insecure: Login endpoint (no password hashing, no JWT)
+// Insecure: login (compares plaintext; no JWT/session is issued).
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
@@ -65,7 +71,8 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Insecure: Create post (vulnerable to SQL Injection, no auth)
+// Insecure: create post
+// Vulnerable: SQL injection (string concatenation) + no auth/CSRF.
 app.post('/posts', (req, res) => {
   const { title, content } = req.body;
   if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
@@ -76,7 +83,8 @@ app.post('/posts', (req, res) => {
   });
 });
 
-// Insecure: Get all posts (no output encoding, XSS possible, no auth)
+// Insecure: read posts
+// Vulnerable: returns raw content; frontend renders as HTML (XSS possible).
 app.get('/posts', (req, res) => {
   db.all('SELECT * FROM posts', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -84,7 +92,8 @@ app.get('/posts', (req, res) => {
   });
 });
 
-// Insecure: Edit post (vulnerable to SQL Injection, no auth)
+// Insecure: update post
+// Vulnerable: SQL injection (string concatenation) + no auth/CSRF.
 app.put('/posts/:id', (req, res) => {
   const { title, content } = req.body;
   const { id } = req.params;
@@ -96,7 +105,8 @@ app.put('/posts/:id', (req, res) => {
   });
 });
 
-// Insecure: Delete post (vulnerable to SQL Injection)
+// Insecure: delete post
+// Vulnerable: SQL injection via path parameter.
 app.delete('/posts/:id', (req, res) => {
   const { id } = req.params;
   const sql = `DELETE FROM posts WHERE id = ${id}`;
@@ -108,7 +118,7 @@ app.delete('/posts/:id', (req, res) => {
 
 // ================= SECURE ENDPOINTS (INACTIVE) =================
 // To activate secure endpoints, comment out the insecure block above and uncomment this block.
-/*
+
 // Register endpoint (secure version)
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
@@ -181,12 +191,37 @@ app.delete('/posts/:id', authenticateToken, (req, res) => {
     res.json({ message: 'Post deleted', id });
   });
 });
-*/
 
 
 
 
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+/*/ --- Server start (with friendly port-in-use handling) ---
+// Use an explicit HTTP server so we can register the error handler before binding the port.
+const server = http.createServer(app);
+
+server.on('error', (err) => {
+  if (err && err.code === 'EADDRINUSE') {
+    console.error(`\nPort ${PORT} is already in use.`);
+    console.error('Stop the other backend instance, or start this one with a different port, e.g.:');
+    console.error('  $env:PORT=4001; npm start');
+    console.error('On Windows you can find/kill the process with:');
+    console.error(`  netstat -ano | findstr ":${PORT}"`);
+    console.error('  taskkill /PID <pid> /F\n');
+    process.exit(1);
+  }
+
+  console.error('Server failed to start:', err);
+  process.exit(1);
+});*/
+
+server.listen(PORT, HOST, () => {
+  console.log(`Server running on http://${HOST}:${PORT}`);
+});
+
+process.on('SIGINT', () => {
+  server.close(() => {
+    db.close(() => process.exit(0));
+  });
 });

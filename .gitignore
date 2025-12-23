@@ -7,5 +7,12 @@ dist/
 *.log
 backend_old/
 
+# Worktree folders (local dev convenience)
+_main_worktree/
+_secure_worktree/
+
+# Local databases (should not be committed)
+*.db*
+
 # Office/OneDrive temp files
 ~WRL*.tmp

@@ -4,8 +4,9 @@
   "description": "Node.js/Express backend for Secure Application Programming project.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "seed": "node seed.js",
+    "start": "node seed.js && node index.js",
+    "dev": "node seed.js && nodemon index.js"
   },
   "dependencies": {
     "express": "^4.18.2",

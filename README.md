@@ -19,8 +19,13 @@ This repository contains a full-stack web application demonstrating both vulnera
 1. Open a terminal and navigate to `backend/`
 2. Run `npm install` to install dependencies
 3. Start the server with `npm start` (or `npm run dev` for development with nodemon)
+	- `npm start` automatically runs a seed step so demo users/posts exist on first run
 4. The backend runs on [http://localhost:4000](http://localhost:4000) by default
 5. If you see a ReferenceError or port conflict, ensure no other server is running and that the code is up to date.
+
+### Demo Accounts (seeded)
+- Username: `demo1` Password: `password123`
+- Username: `maze1` Password: `password123`
 
 ### Frontend
 1. Open a new terminal and navigate to `frontend/`
