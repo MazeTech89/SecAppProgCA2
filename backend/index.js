@@ -1,8 +1,6 @@
-// SecureApp backend (Express + SQLite)
-// Purpose: provide secure auth + CRUD endpoints used by the React frontend.
-// Note: intentionally insecure endpoints are kept below but *deactivated* for coursework demos.
-
-// --- Dependencies / middleware ---
+// InsecureApp backend (Express + SQLite)
+// Purpose: intentionally vulnerable API used to demonstrate OWASP issues (SQLi/XSS/sensitive data exposure).
+// Note: the secure implementation lives on the `main` branch; this branch keeps the unsafe behavior for screenshots/testing.
 const express = require('express');
 const http = require('http');
 const bodyParser = require('body-parser');
@@ -10,44 +8,19 @@ const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const csrf = require('csurf');
-const cookieParser = require('cookie-parser');
 
-// --- App + config ---
 const app = express();
 const PORT = process.env.PORT || 4000;
-// Force IPv4 localhost by default (Windows often resolves `localhost` inconsistently between IPv4/IPv6).
 const HOST = process.env.HOST || '127.0.0.1';
-// JWT signing secret (use env var in real deployments; fallback is for local dev/testing only).
+const DB_PATH = process.env.DB_PATH || './database.db';
+// Demo-only fallback; prefer env var (also used by tests).
 const SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-// --- Security headers / transport hardening ---
-app.use(helmet());
-
-// --- CORS: allow the local React dev server to call the API with cookies (CSRF) ---
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true
-}));
-
-// --- Request parsing + logging ---
+// Allow credentials for cookie-based CSRF when not using CRA proxy.
+app.use(cors({ origin: true, credentials: true }));
 app.use(bodyParser.json());
-app.use(cookieParser());
-app.use(morgan('combined'));
 
-// --- CSRF protection (cookie-based, used on state-changing routes) ---
-const csrfProtection = csrf({ cookie: true });
-
-// Logout endpoint (stateless JWT): instruct client to remove token.
-app.post('/logout', csrfProtection, (req, res) => {
-  // For stateless JWT, just tell client to remove token
-  res.json({ message: 'Logged out. Please remove token on client.' });
-});
-
-// --- SQLite database setup (used for users + blog posts) ---
-const DB_PATH = process.env.DB_PATH || './database.db';
+// SQLite3 database setup (users + posts).
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
     console.error('Could not connect to database', err);
@@ -55,14 +28,14 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
     console.log('Connected to SQLite3 database.');
   }
 });
+
 db.serialize(() => {
-  // User table: stores bcrypt password hash.
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
     password TEXT
   )`);
-  // Blog post table: content is output-encoded on read to reduce XSS risk.
+  // Posts table used by the blog demo.
   db.run(`CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
@@ -74,79 +47,110 @@ db.serialize(() => {
 });
 
 
-/* ================= INSECURE ENDPOINTS (DEACTIVATED) =================
-// To activate, comment out the secure endpoints and uncomment these.
-// These endpoints demonstrate SQL Injection, XSS, and Sensitive Data Exposure;
-//
-// Insecure Register (no password hashing, no validation)
-app.post('/insecure/register', (req, res) => {
+
+// ================= SWITCHING SECURE/INSECURE =================
+// Only ONE block should be active at a time.
+// - Secure mode: keep the SECURE block uncommented (default in this file).
+// - Insecure mode: comment the SECURE block and uncomment the INSECURE block.
+
+// ================= INSECURE ENDPOINTS (INACTIVE) =================
+// Uncomment this whole block for insecure mode.
+/*
+
+// Insecure: register (stores passwords in plaintext; minimal validation).
+app.post('/register', (req, res) => {
   const { username, password } = req.body;
-  db.run(`INSERT INTO users (username, password) VALUES ('${username}', '${password}')`, function(err) {
+  if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
+  db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, password], function(err) {
     if (err) return res.status(400).json({ error: 'User already exists' });
     res.json({ id: this.lastID, username });
   });
 });
 
-// Insecure Login (no password hashing, no rate limiting)
-app.post('/insecure/login', (req, res) => {
+// Insecure: login (compares plaintext; no JWT/session is issued).
+app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  db.get(`SELECT * FROM users WHERE username = '${username}' AND password = '${password}'`, (err, user) => {
+  db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
     if (err || !user) return res.status(401).json({ error: 'Invalid credentials' });
-    // Insecure: returns user info directly
-    res.json({ id: user.id, username: user.username });
+    if (password !== user.password) return res.status(401).json({ error: 'Invalid credentials' });
+    res.json({ message: 'Login successful', id: user.id, username: user.username });
   });
 });
 
-// Insecure: Create post (SQL Injection, no auth)
-app.post('/insecure/posts', (req, res) => {
-  const { user_id, title, content } = req.body;
-  db.run(`INSERT INTO posts (user_id, title, content) VALUES (${user_id}, '${title}', '${content}')`, function(err) {
+// Insecure: create post
+// Vulnerable: SQL injection (string concatenation) + no auth/CSRF.
+app.post('/posts', (req, res) => {
+  const { title, content } = req.body;
+  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+  const sql = `INSERT INTO posts (title, content) VALUES ('${title}', '${content}')`;
+  db.run(sql, function(err) {
     if (err) return res.status(400).json({ error: err.message });
-    res.json({ id: this.lastID, user_id, title, content });
+    res.json({ id: this.lastID, title, content });
   });
 });
 
-// Insecure: Get all posts (no output encoding, XSS risk)
-app.get('/insecure/posts', (req, res) => {
+// Insecure: read posts
+// Vulnerable: returns raw content; frontend renders as HTML (XSS possible).
+app.get('/posts', (req, res) => {
   db.all('SELECT * FROM posts', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
-// Insecure: Edit post (SQL Injection, no auth)
-app.put('/insecure/posts/:id', (req, res) => {
+// Insecure: update post
+// Vulnerable: SQL injection (string concatenation) + no auth/CSRF.
+app.put('/posts/:id', (req, res) => {
   const { title, content } = req.body;
   const { id } = req.params;
-  db.run(`UPDATE posts SET title = '${title}', content = '${content}' WHERE id = ${id}`,
-    function(err) {
-      if (err) return res.status(400).json({ error: err.message });
-      res.json({ id, title, content });
-    });
+  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+  const sql = `UPDATE posts SET title = '${title}', content = '${content}' WHERE id = ${id}`;
+  db.run(sql, function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    res.json({ id, title, content });
+  });
 });
 
-// Insecure: Delete post (SQL Injection, no auth)
-app.delete('/insecure/posts/:id', (req, res) => {
+// Insecure: delete post
+// Vulnerable: SQL injection via path parameter.
+app.delete('/posts/:id', (req, res) => {
   const { id } = req.params;
-  db.run(`DELETE FROM posts WHERE id = ${id}`, function(err) {
+  const sql = `DELETE FROM posts WHERE id = ${id}`;
+  db.run(sql, function(err) {
     if (err) return res.status(400).json({ error: err.message });
     res.json({ message: 'Post deleted', id });
   });
 });
 
-// Insecure: Get all users (no auth, exposes all user data)
-app.get('/insecure/users', (req, res) => {
-  db.all('SELECT * FROM users', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+*/
+
+// ================= SECURE ENDPOINTS (ACTIVE) =================
+// Comment out this whole block for insecure mode.
+
+// CSRF protection (cookie-based)
+const cookieParser = require('cookie-parser');
+const csurf = require('csurf');
+
+app.use(cookieParser());
+app.use(csurf({
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false
+  }
+}));
+
+app.get('/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
 });
-//
-// ================= END INSECURE ENDPOINTS =================*/
 
+app.use((err, req, res, next) => {
+  if (err && err.code === 'EBADCSRFTOKEN') return res.status(403).json({ error: 'Invalid CSRF token' });
+  return next(err);
+});
 
-// --- Auth: register (hashed password + parameterized SQL) ---
-app.post('/register', csrfProtection, (req, res) => {
+// Register endpoint (secure version)
+app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
   const hashedPassword = bcrypt.hashSync(password, 10);
@@ -156,8 +160,8 @@ app.post('/register', csrfProtection, (req, res) => {
   });
 });
 
-// --- Auth: login (bcrypt verify + JWT issue) ---
-app.post('/login', csrfProtection, (req, res) => {
+// Login endpoint (secure version)
+app.post('/login', (req, res) => {
   const { username, password } = req.body;
   db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
     if (err || !user) return res.status(401).json({ error: 'Invalid credentials' });
@@ -167,61 +171,28 @@ app.post('/login', csrfProtection, (req, res) => {
   });
 });
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-
-// --- Posts: create (auth + CSRF + parameterized SQL) ---
-app.post('/posts', authenticateToken, csrfProtection, (req, res) => {
-  const { title, content } = req.body;
-  const user_id = req.user.id;
-  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
-  db.run('INSERT INTO posts (user_id, title, content) VALUES (?, ?, ?)', [user_id, title, content], function(err) {
-    if (err) return res.status(400).json({ error: err.message });
-    res.json({ id: this.lastID, user_id, title, content });
+// Secure: Create post (parameterized, requires auth)
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
   });
-});
+}
 
-
-
-// --- Posts: read (auth + output encoding to reduce XSS risk) ---
-app.get('/posts', authenticateToken, (req, res) => {
-  db.all('SELECT * FROM posts', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    // Simple output encoding for demonstration
-    const encode = (str) => String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const safeRows = rows.map(row => ({
-      ...row,
-      title: encode(row.title),
-      content: encode(row.content)
-    }));
-    res.json(safeRows);
-  });
-});
-
-
-// --- Posts: update (auth + CSRF + ownership check) ---
-app.put('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
-  const { title, content } = req.body;
-  const { id } = req.params;
-  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
-  db.run('UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?', [title, content, id, req.user.id], function(err) {
-    if (err) return res.status(400).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: 'Post not found or not owned' });
-    res.json({ id, title, content });
-  });
-});
-
-
-// --- Posts: delete (auth + CSRF + ownership check) ---
-app.delete('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
-  const { id } = req.params;
-  db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, req.user.id], function(err) {
-    if (err) return res.status(400).json({ error: err.message });
-    if (this.changes === 0) return res.status(404).json({ error: 'Post not found or not owned' });
-    res.json({ message: 'Post deleted', id });
-  });
-});
-
-// --- Users: list (auth; returns minimal fields only) ---
+// Secure: list users (id + username only)
 app.get('/users', authenticateToken, (req, res) => {
   db.all('SELECT id, username FROM users', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -229,39 +200,68 @@ app.get('/users', authenticateToken, (req, res) => {
   });
 });
 
-// --- JWT authentication middleware (Authorization: Bearer <token>) ---
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token provided' });
+// Secure: logout (stateless JWT; no-op, but kept for UX/tests)
+app.post('/logout', (req, res) => {
+  res.json({ message: 'Logged out' });
+});
 
-  jwt.verify(token, SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid token' });
-    req.user = user;
-    next();
+app.post('/posts', authenticateToken, (req, res) => {
+  const { title, content } = req.body;
+  const userId = req.user.id;
+  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+  db.run('INSERT INTO posts (title, content, user_id) VALUES (?, ?, ?)', [title, content, userId], function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    res.json({ id: this.lastID, title, content });
   });
-}
-
-// CSRF token endpoint for the frontend to read and send back on POST/PUT/DELETE.
-app.get('/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
 });
 
-// Centralized CSRF error handling.
-app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-    // CSRF token errors
-    return res.status(403).json({ error: 'Invalid CSRF token' });
-  }
-  next(err);
+// Secure: Get all posts (output encoding, requires auth)
+app.get('/posts', authenticateToken, (req, res) => {
+  db.all('SELECT * FROM posts', [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    const encoded = rows.map((p) => ({
+      ...p,
+      title: escapeHtml(p.title),
+      content: escapeHtml(p.content)
+    }));
+    res.json(encoded);
+  });
 });
 
-// Export for testing (Supertest) and for running as a standalone server.
-module.exports = { app, db };
+// Secure: Edit post (parameterized, requires auth)
+app.put('/posts/:id', authenticateToken, (req, res) => {
+  const { title, content } = req.body;
+  const { id } = req.params;
+  if (!title || !content) return res.status(400).json({ error: 'Missing fields' });
+  db.run('UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?', [title, content, id, req.user.id], function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Post not found' });
+    res.json({ id, title, content });
+  });
+});
 
-// Only bind to a port when executed directly (`node index.js`).
-if (require.main === module) {
-  const server = http.createServer(app);
+// Secure: Delete post (parameterized, requires auth)
+app.delete('/posts/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, req.user.id], function(err) {
+    if (err) return res.status(400).json({ error: err.message });
+    if (this.changes === 0) return res.status(404).json({ error: 'Post not found' });
+    res.json({ message: 'Post deleted', id });
+  });
+});
+
+
+
+
+
+
+// --- Server start (with friendly port-in-use handling) ---
+// Start only when run directly (not when imported by Jest).
+let server;
+
+function startServer() {
+  // Use an explicit HTTP server so we can register the error handler before binding the port.
+  server = http.createServer(app);
 
   server.on('error', (err) => {
     if (err && err.code === 'EADDRINUSE') {
@@ -281,11 +281,17 @@ if (require.main === module) {
   server.listen(PORT, HOST, () => {
     console.log(`Server running on http://${HOST}:${PORT}`);
   });
+}
 
-  // Graceful shutdown during local dev.
+if (require.main === module) {
+  startServer();
+
   process.on('SIGINT', () => {
+    if (!server) return;
     server.close(() => {
       db.close(() => process.exit(0));
     });
   });
 }
+
+module.exports = { app, db, startServer };
