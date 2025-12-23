@@ -34,6 +34,17 @@ This repository contains a full-stack web application demonstrating both vulnera
 4. The frontend runs on [http://localhost:3000](http://localhost:3000) by default
 5. If you see errors about endpoints, ensure the backend is running and accessible at the correct port.
 
+## Demo Steps (quick)
+1. Start backend (`backend/`): `npm install` then `npm start` (auto-seeds demo data)
+2. Start frontend (`frontend/`): `npm install` then `npm start`
+3. In browser open [http://localhost:3000](http://localhost:3000)
+4. Log in with `demo1 / password123` (or `maze1 / password123`)
+5. Go to Posts and confirm you can:
+	- View seeded posts
+	- Create a post
+	- Edit your post
+	- Delete your post
+
 ### Troubleshooting
 - If you get a 400 or 500 error, check that you have registered a user and are using a valid user ID for blog posts.
 - If you get a CORS or network error, make sure both servers are running and accessible.
