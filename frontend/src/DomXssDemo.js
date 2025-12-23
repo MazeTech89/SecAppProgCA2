@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 function DomXssDemo() {
+  // Demonstration component: shows DOM-XSS and reflected-XSS patterns.
+  // This is intentionally unsafe and should not exist in production code.
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
 
-  // DOM-based XSS: directly set innerHTML from user input
+  // DOM-based XSS: directly set innerHTML from user input.
   const handleDomXss = () => {
     document.getElementById('dom-xss-output').innerHTML = input;
   };
 
-  // Reflected XSS: call backend echo endpoint
+  // Reflected XSS: backend echoes attacker-controlled input.
   const handleReflectedXss = async () => {
-    const res = await axios.get('http://localhost:4000/insecure/echo?input=' + encodeURIComponent(input));
+    const res = await axios.get('/insecure/echo?input=' + encodeURIComponent(input));
     setOutput(res.data);
   };
 

@@ -5,10 +5,11 @@ import { getCsrfToken } from './csrf';
 function LogoutUser({ onLogout }) {
   const handleLogout = async () => {
     const csrfToken = await getCsrfToken();
-    // Remove JWT from localStorage/sessionStorage if used
+    // Client-side logout: delete stored JWT.
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
-    await axios.post('http://localhost:4000/logout', {}, {
+    // Backend logout is CSRF-protected (even though JWT is stateless).
+    await axios.post('/logout', {}, {
       headers: { 'X-CSRF-Token': csrfToken }
     });
     if (onLogout) onLogout();

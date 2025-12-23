@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-// UserList component fetches user data from backend
+// UserList
+// Purpose: show the authenticated user's view of the user directory.
+// Security: backend returns minimal fields (id + username) and requires JWT.
 function UserList() {
 
   // State to store user list
   const [users, setUsers] = useState([]);
   const [error, setError] = useState('');
 
-  // Fetch users from backend when component mounts
+  // Fetch users once on mount.
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (!token) {
       setError('Not authenticated. Please log in.');
       return;
     }
-    axios.get('http://localhost:4000/users', {
+    // JWT is sent in Authorization header.
+    axios.get('/users', {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => {

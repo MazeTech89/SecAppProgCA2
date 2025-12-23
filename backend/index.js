@@ -1,10 +1,10 @@
+// SecureApp backend (Express + SQLite)
+// Purpose: provide secure auth + CRUD endpoints used by the React frontend.
+// Note: intentionally insecure endpoints are kept below but *deactivated* for coursework demos.
 
-// ...existing code...
-// ...existing code...
-// ...existing code...
-// Basic Express server setup for Secure Application Programming project
-
+// --- Dependencies / middleware ---
 const express = require('express');
+const http = require('http');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
@@ -15,29 +15,38 @@ const morgan = require('morgan');
 const csrf = require('csurf');
 const cookieParser = require('cookie-parser');
 
+// --- App + config ---
 const app = express();
 const PORT = process.env.PORT || 4000;
+// Force IPv4 localhost by default (Windows often resolves `localhost` inconsistently between IPv4/IPv6).
+const HOST = process.env.HOST || '127.0.0.1';
+// JWT signing secret (use env var in real deployments; fallback is for local dev/testing only).
 const SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-app.use(helmet()); // Security headers
+// --- Security headers / transport hardening ---
+app.use(helmet());
+
+// --- CORS: allow the local React dev server to call the API with cookies (CSRF) ---
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true
 }));
+
+// --- Request parsing + logging ---
 app.use(bodyParser.json());
 app.use(cookieParser());
-app.use(morgan('combined')); // Logging
+app.use(morgan('combined'));
 
-// CSRF protection (cookie-based)
+// --- CSRF protection (cookie-based, used on state-changing routes) ---
 const csrfProtection = csrf({ cookie: true });
 
-// Logout endpoint (stateless JWT: instruct client to remove token)
+// Logout endpoint (stateless JWT): instruct client to remove token.
 app.post('/logout', csrfProtection, (req, res) => {
   // For stateless JWT, just tell client to remove token
   res.json({ message: 'Logged out. Please remove token on client.' });
 });
 
-// SQLite3 database setup
+// --- SQLite database setup (used for users + blog posts) ---
 const DB_PATH = process.env.DB_PATH || './database.db';
 const db = new sqlite3.Database(DB_PATH, (err) => {
   if (err) {
@@ -47,12 +56,13 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
   }
 });
 db.serialize(() => {
+  // User table: stores bcrypt password hash.
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
     password TEXT
   )`);
-  // Blog post table for demonstration (with XSS and SQLi vulnerabilities in insecure branch)
+  // Blog post table: content is output-encoded on read to reduce XSS risk.
   db.run(`CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
@@ -135,7 +145,7 @@ app.get('/insecure/users', (req, res) => {
 // ================= END INSECURE ENDPOINTS =================*/
 
 
-// Register endpoint (secure version)
+// --- Auth: register (hashed password + parameterized SQL) ---
 app.post('/register', csrfProtection, (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Missing fields' });
@@ -146,7 +156,7 @@ app.post('/register', csrfProtection, (req, res) => {
   });
 });
 
-// Login endpoint (secure version)
+// --- Auth: login (bcrypt verify + JWT issue) ---
 app.post('/login', csrfProtection, (req, res) => {
   const { username, password } = req.body;
   db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
@@ -159,7 +169,7 @@ app.post('/login', csrfProtection, (req, res) => {
 
 
 
-// Secure: Create post (uses parameterized queries)
+// --- Posts: create (auth + CSRF + parameterized SQL) ---
 app.post('/posts', authenticateToken, csrfProtection, (req, res) => {
   const { title, content } = req.body;
   const user_id = req.user.id;
@@ -172,7 +182,7 @@ app.post('/posts', authenticateToken, csrfProtection, (req, res) => {
 
 
 
-// Secure: Get all posts (output encoding for XSS prevention)
+// --- Posts: read (auth + output encoding to reduce XSS risk) ---
 app.get('/posts', authenticateToken, (req, res) => {
   db.all('SELECT * FROM posts', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -188,7 +198,7 @@ app.get('/posts', authenticateToken, (req, res) => {
 });
 
 
-// Secure: Edit post (uses parameterized queries)
+// --- Posts: update (auth + CSRF + ownership check) ---
 app.put('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
   const { title, content } = req.body;
   const { id } = req.params;
@@ -201,7 +211,7 @@ app.put('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
 });
 
 
-// Secure: Delete post (uses parameterized queries)
+// --- Posts: delete (auth + CSRF + ownership check) ---
 app.delete('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
   const { id } = req.params;
   db.run('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, req.user.id], function(err) {
@@ -211,14 +221,15 @@ app.delete('/posts/:id', authenticateToken, csrfProtection, (req, res) => {
   });
 });
 
-// Secure: Get all users (id and username only, requires authentication)
+// --- Users: list (auth; returns minimal fields only) ---
 app.get('/users', authenticateToken, (req, res) => {
   db.all('SELECT id, username FROM users', [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
-// JWT authentication middleware
+
+// --- JWT authentication middleware (Authorization: Bearer <token>) ---
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -231,11 +242,12 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// CSRF token endpoint for frontend (if needed)
+// CSRF token endpoint for the frontend to read and send back on POST/PUT/DELETE.
 app.get('/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
 
+// Centralized CSRF error handling.
 app.use((err, req, res, next) => {
   if (err.code === 'EBADCSRFTOKEN') {
     // CSRF token errors
@@ -244,10 +256,36 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// Export for testing (Supertest) and for running as a standalone server.
 module.exports = { app, db };
 
+// Only bind to a port when executed directly (`node index.js`).
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  const server = http.createServer(app);
+
+  server.on('error', (err) => {
+    if (err && err.code === 'EADDRINUSE') {
+      console.error(`\nPort ${PORT} is already in use.`);
+      console.error('Stop the other backend instance, or start this one with a different port, e.g.:');
+      console.error('  $env:PORT=4001; npm start');
+      console.error('On Windows you can find/kill the process with:');
+      console.error(`  netstat -ano | findstr ":${PORT}"`);
+      console.error('  taskkill /PID <pid> /F\n');
+      process.exit(1);
+    }
+
+    console.error('Server failed to start:', err);
+    process.exit(1);
+  });
+
+  server.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
+  });
+
+  // Graceful shutdown during local dev.
+  process.on('SIGINT', () => {
+    server.close(() => {
+      db.close(() => process.exit(0));
+    });
   });
 }

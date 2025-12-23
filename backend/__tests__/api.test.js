@@ -1,15 +1,20 @@
+// Backend API tests (secure branch / main)
+// Goal: validate the secure controls expected by the use-cases (CSRF, JWT auth, output encoding, ownership checks).
 const request = require('supertest');
 
-// Ensure the backend uses an in-memory DB for tests.
+// Force an in-memory DB so tests are isolated and repeatable.
 process.env.DB_PATH = ':memory:';
 process.env.JWT_SECRET = 'test_secret';
 
+// Import the Express app without binding a real network port.
 const { app, db } = require('../index');
 
+// Helpers: reduce duplication across test cases.
 function uniqueUsername(prefix = 'user') {
   return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
 }
 
+// Get a valid CSRF token for state-changing requests.
 async function getCsrf(agent) {
   const res = await agent.get('/csrf-token').expect(200);
   expect(res.body).toHaveProperty('csrfToken');
@@ -18,6 +23,7 @@ async function getCsrf(agent) {
   return res.body.csrfToken;
 }
 
+// Register a user (requires CSRF).
 function register(agent, { username, password, csrfToken }) {
   return agent
     .post('/register')
@@ -25,6 +31,7 @@ function register(agent, { username, password, csrfToken }) {
     .send({ username, password });
 }
 
+// Log in and obtain a JWT (requires CSRF).
 function login(agent, { username, password, csrfToken }) {
   return agent
     .post('/login')
@@ -33,7 +40,7 @@ function login(agent, { username, password, csrfToken }) {
 }
 
 afterAll((done) => {
-  // Close sqlite connection to avoid Jest hanging.
+  // Close SQLite connection to avoid Jest hanging.
   db.close(done);
 });
 

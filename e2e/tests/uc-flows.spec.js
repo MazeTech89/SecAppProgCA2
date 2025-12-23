@@ -1,9 +1,13 @@
+// End-to-end tests (Playwright)
+// Purpose: exercise key use-case flows through the real UI + API together.
 const { test, expect } = require('@playwright/test');
 
+// Helper: unique usernames to avoid collisions across test runs.
 function uniq(prefix) {
   return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
 }
 
+// UC1: register via the UI.
 async function register(page, username, password) {
   await page.goto('/register');
   await page.getByPlaceholder('Username').fill(username);
@@ -12,6 +16,7 @@ async function register(page, username, password) {
   await expect(page.getByText('Registration successful!')).toBeVisible();
 }
 
+// UC2: login via the UI and land on the protected /users route.
 async function login(page, username, password) {
   await page.goto('/login');
   await page.getByPlaceholder('Username').fill(username);
@@ -22,6 +27,7 @@ async function login(page, username, password) {
   await expect(page.getByRole('heading', { name: 'Blog Posts' })).toBeVisible();
 }
 
+// UC7: logout via the UI and return to /login.
 async function logout(page) {
   await page.getByRole('link', { name: 'Logout' }).click();
   await page.getByRole('button', { name: 'Logout' }).click();

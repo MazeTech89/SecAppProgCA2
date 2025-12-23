@@ -1,4 +1,5 @@
-
+// Frontend app shell
+// Purpose: minimal React router + auth gate (token present => protected routes available).
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import UserList from './UserList';
@@ -7,16 +8,17 @@ import LoginUser from './LoginUser';
 import BlogPosts from './BlogPosts';
 import LogoutUser from './LogoutUser';
 
-
-// Main App component for the frontend
 function App() {
+  // Auth state is derived from the presence of a JWT stored in browser storage.
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Initialize auth state on page load.
   useEffect(() => {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     setIsAuthenticated(!!token);
   }, []);
 
+  // Keep auth state in sync across tabs/windows.
   useEffect(() => {
     const handleStorage = () => {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -26,15 +28,16 @@ function App() {
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-
+  // Called by the login component after it stores the JWT.
   const handleLogin = () => {
     setIsAuthenticated(true);
-    window.location.href = '/users'; // Redirect to blog after login
+    window.location.href = '/users';
   };
 
+  // Called by the logout component after it clears storage.
   const handleLogout = () => {
     setIsAuthenticated(false);
-    window.location.href = '/login'; // Redirect to login after logout
+    window.location.href = '/login';
   };
 
   return (
@@ -62,4 +65,3 @@ function App() {
 }
 
 export default App;
-// ...existing code...
